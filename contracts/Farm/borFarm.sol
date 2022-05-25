@@ -1,31 +1,30 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.11;
 
-import "./ITresuary.sol";
-import "./IRewardWallet.sol";
+import "./IFarmTresuary.sol";
+import "../Stake/IRewardWallet.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 
 
-contract BorStaking is Ownable {
+contract BorFarm is Ownable {
 
     mapping(address => uint256) public stakingBalance;
     mapping(address => bool) public isStaking;
     mapping(address => uint256) public startTime;
     mapping(address => uint256) public userRewards;
-    mapping(address => uint256) public userStartTimeUpdated;
+    
 
     uint256 rewardRate = 86400;
     uint256 oldRewardRate;
     uint256 rewardRateUpdatedTime;
 
-    address private _owner;
-    ITresuary public tresuary;
+    IFarmTresuary public tresuary;
     IRewardWallet public rewardWallet;
        
 
-    IERC20 public bor;
+    IERC20 public lpToken;
     IERC20 public rewardsToken;
     
 
@@ -33,19 +32,18 @@ contract BorStaking is Ownable {
     event Unstake(address indexed from, uint256 amount);
     event RewardsWithdrawal(address indexed to, uint256 amount);
     event RewardRateUpdated(uint256 oldRate, uint256 newRate);
-    event TresuaryUpdated(ITresuary oldTresuary, ITresuary newTresuary);
+    event TresuaryUpdated(IFarmTresuary oldTresuary, IFarmTresuary newTresuary);
     event RewardWalletUpdated(IRewardWallet oldRewardWallet, IRewardWallet newRewardWallet);
 
 
-    constructor(IERC20 _bor, IERC20 _rewardsToken) {
-        bor = _bor;
+    constructor(IERC20 _lpToken, IERC20 _rewardsToken) {
+        lpToken = _lpToken;
         rewardsToken = _rewardsToken;
-        _owner = _msgSender();
     }
 
     
     function stake(uint256 amount) public {
-        require(amount > 0 && bor.balanceOf(msg.sender) >= amount, "Incufficient BOR balance");
+        require(amount > 0 && lpToken.balanceOf(msg.sender) >= amount, "Incufficient LP balance");
 
         if(isStaking[msg.sender] == true){
             uint256 toTransfer = getTotalRewards(msg.sender);
@@ -110,7 +108,7 @@ contract BorStaking is Ownable {
     }
 
 
-    function setTresuary(ITresuary _tresuary) external onlyOwner {
+    function setTresuary(IFarmTresuary _tresuary) external onlyOwner {
         emit TresuaryUpdated(tresuary, _tresuary);
         tresuary = _tresuary;
     }
@@ -118,10 +116,6 @@ contract BorStaking is Ownable {
     function setRewardWallet(IRewardWallet _rewardWallet) external onlyOwner {
         emit RewardWalletUpdated(rewardWallet, _rewardWallet);
         rewardWallet = _rewardWallet;
-    }
-
-    function getRewardRate() external view returns(uint256){
-        return rewardRate;
     }
 
    

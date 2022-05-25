@@ -103,6 +103,7 @@ describe("Staking", function () {
   it("should handle deposits correctly", async function () {
     await this.bor.connect(this.alice).approve(this.tresuary.address, ethers.utils.parseEther("100000"))
     await this.staking.connect(this.alice).stake(ethers.utils.parseEther("30000"))
+    await this.staking.connect(this.alice).stake(ethers.utils.parseEther("30000"))
 
     await this.bor.connect(this.bob).approve(this.tresuary.address, ethers.utils.parseEther("100000"))
     await this.staking.connect(this.bob).stake(ethers.utils.parseEther("30000"))
@@ -137,6 +138,15 @@ describe("Staking", function () {
 
   })
 
+  it("Returns correct rewardrate", async function (){
+    let rate = await this.staking.getRewardRate()
+    expect(rate).to.equal(3000)
+  })
+
+  it("Set's isStaking to false if user balance 0", async function (){
+    await this.staking.connect(this.bob).unstake(ethers.utils.parseEther("30000"))
+    expect(await this.staking.isStaking(this.bob.address)).to.equal(false)
+  })
 
 
 })  

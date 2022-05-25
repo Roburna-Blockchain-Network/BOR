@@ -20,6 +20,8 @@ contract FarmTresuary is Ownable, IFarmTresuary{
     event Withdrawal(address user, uint256 amount);
     event FarmContractUpdated(address oldFarmContract, address newFarmContract);
     event LpTokenUpdated(IERC20 oldLpToken, IERC20 newLpToken);
+    event LogWithdrawalBNB(address account, uint256 amount);
+    event LogWithdrawToken(address token, address account, uint256 amount);
 
     /** 
      * @dev Throws if called by any account other than the owner or deployer.
@@ -59,6 +61,29 @@ contract FarmTresuary is Ownable, IFarmTresuary{
     function updateLpToken(IERC20 _lpToken) external onlyOwnerOrDeployer{
         emit LpTokenUpdated(lpToken, _lpToken);
         lpToken = _lpToken;
+    }
+
+    function withdrawBNB(address payable account, uint256 amount) external onlyOwnerOrDeployer {
+        require(amount <= (address(this)).balance, "Incufficient funds");
+        account.transfer(amount);
+        emit LogWithdrawalBNB(account, amount);
+   }
+
+    /**
+     * @notice Should not be withdrawn scam token.
+     */
+    function withdrawToken(IERC20 token, address account, uint256 amount) external onlyOwnerOrDeployer {
+        require(amount <= token.balanceOf(account), "Incufficient funds");
+        require(token != lpToken, "Can't withdraw lpToken");
+        
+        require(token.transfer(account, amount), "Transfer Fail");
+
+        emit LogWithdrawToken(address(token), account, amount);
+    }
+
+    function updateDeployerAddress(address newDeployer) external onlyOwnerOrDeployer{
+        require(deployer != newDeployer, "The address is already set");
+        deployer = newDeployer;
     }
 
 }

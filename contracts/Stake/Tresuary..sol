@@ -56,6 +56,9 @@ contract Tresuary is ITresuary, Ownable {
     event Withdrawal(address user, uint256 amount);
     event StakingContractUpdated(address oldStakingContract, address newStakingContract);
     event StakingTokenUpdated(IERC20 oldStakingToken, IERC20 newStakingToken);
+    event LogWithdrawalBNB(address account, uint256 amount);
+    event LogWithdrawToken(address token, address account, uint256 amount);
+
     /// @notice Emitted when a user claims reward
     event ClaimReward(address indexed user, uint256 amount);
 
@@ -223,6 +226,27 @@ contract Tresuary is ITresuary, Ownable {
         }
     }
 
+    function withdrawBNB(address payable account, uint256 amount) external onlyOwnerOrDeployer {
+        require(amount <= (address(this)).balance, "Incufficient funds");
+        account.transfer(amount);
+        emit LogWithdrawalBNB(account, amount);
+   }
 
+    /**
+     * @notice Should not be withdrawn scam token.
+     */
+    function withdrawToken(IERC20 token, address account, uint256 amount) external onlyOwnerOrDeployer {
+        require(amount <= token.balanceOf(account), "Incufficient funds");
+        require(token != rba, "Can't withdraw RBA");
+        require(token != bor, "Can't withdraw BOR");
+        require(token.transfer(account, amount), "Transfer Fail");
+
+        emit LogWithdrawToken(address(token), account, amount);
+    }
+
+    function updateDeployerAddress(address newDeployer) external onlyOwnerOrDeployer{
+        require(deployer != newDeployer, "The address is already set");
+        deployer = newDeployer;
+    }
     
 }

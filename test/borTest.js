@@ -72,28 +72,29 @@ describe("BOR", function () {
 
   })
 
+
   it("takes fee when buying", async function(){
      const RouterWSigner = await this.router.connect(this.owner)
      const WETH ="0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c"
      const path2 = [WETH, this.token.address]
      
      
-     await this.token.approve('0x10ED43C718714eb63d5aA57B78B54704E256024E', ethers.utils.parseEther("1000000"))
-     await RouterWSigner.swapExactETHForTokens(
+     await this.token.connect(this.alice).approve('0x10ED43C718714eb63d5aA57B78B54704E256024E', ethers.utils.parseEther("1000000"))
+     await RouterWSigner.connect(this.alice).swapExactETHForTokens(
        ethers.utils.parseEther("10"),
        path2,
-       this.owner.address,
+       this.alice.address,
        Math.floor(Date.now() / 1000) + 60 * 10,
        {value : ethers.utils.parseEther("10")}
      )
   
-     await RouterWSigner.swapExactETHForTokens(
+     await RouterWSigner.connect(this.alice).swapExactETHForTokens(
       ethers.utils.parseEther("10"),
       path2,
-      this.owner.address,
+      this.alice.address,
       Math.floor(Date.now() / 1000) + 60 * 10,
       {value : ethers.utils.parseEther("10")}
-     )
+    )
   
   
     
@@ -105,8 +106,9 @@ describe("BOR", function () {
      
     
   })
- 
+
   it("takes fee when selling", async function(){
+    this.timeout(100000)
     await this.token.connect(this.alice).approve('0x10ED43C718714eb63d5aA57B78B54704E256024E', ethers.utils.parseEther("10000000"));
     const RouterWSigner = await this.router.connect(this.owner)
     const WETH ="0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c"
@@ -119,13 +121,6 @@ describe("BOR", function () {
       Math.floor(Date.now() / 1000) + 60 * 10
     )
 
-    await RouterWSigner.connect(this.alice).swapExactTokensForETHSupportingFeeOnTransferTokens(
-      ethers.utils.parseEther("10000"),
-      1,
-      path,
-      this.alice.address,
-      Math.floor(Date.now() / 1000) + 60 * 10
-    )
 
     
 
@@ -137,10 +132,27 @@ describe("BOR", function () {
 
 
   it("Make sure it swaps fees", async function(){
-
+  
   })
   it("Make sure it distributes dividends", async function(){})
-  it("Swap from wallets that are excluded and not excluded from fee", async function(){})
+  it("Swap from wallets that are excluded and not excluded from fee", async function(){
+    this.timeout(100000)
+    await this.token.approve('0x10ED43C718714eb63d5aA57B78B54704E256024E', ethers.utils.parseEther("10000000"));
+    const RouterWSigner = await this.router.connect(this.owner)
+    const WETH ="0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c"
+    const path = [this.token.address,  WETH]
+    await RouterWSigner.swapExactTokensForETHSupportingFeeOnTransferTokens(
+      ethers.utils.parseEther("20000"),
+      1,
+      path,
+      this.owner.address,
+      Math.floor(Date.now() / 1000) + 60 * 10
+    )
+
+    const cb = await this.token.balanceOf(this.token.address)
+    const contractBal = await ethers.utils.formatEther(cb)
+    await console.log(contractBal, "contract balance")
+  })
   it("Make sure adding liquidity works", async function(){})
   it("Check that the fees are sent to appropriate wallets correctly", async function(){})
   it("Make sure swap and liquify works", async function(){})
