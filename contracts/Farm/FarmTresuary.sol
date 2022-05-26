@@ -9,7 +9,6 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 contract FarmTresuary is Ownable, IFarmTresuary{
     
-
     mapping(address => uint256) balance;
     address public farmContract;
     address public deployer;
