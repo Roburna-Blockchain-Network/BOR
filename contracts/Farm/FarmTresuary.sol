@@ -21,6 +21,7 @@ contract FarmTresuary is Ownable, IFarmTresuary{
     event LpTokenUpdated(IERC20 oldLpToken, IERC20 newLpToken);
     event LogWithdrawalBNB(address account, uint256 amount);
     event LogWithdrawToken(address token, address account, uint256 amount);
+    event LogUpdateDeployerAddress(address newDeployer);
 
     /** 
      * @dev Throws if called by any account other than the owner or deployer.
@@ -81,8 +82,9 @@ contract FarmTresuary is Ownable, IFarmTresuary{
     }
 
     function updateDeployerAddress(address newDeployer) external onlyOwnerOrDeployer{
-        require(deployer != newDeployer, "The address is already set");
-        deployer = newDeployer;
-    }
+      require(deployer != newDeployer, "The address is already set");
+      deployer = newDeployer;
+      emit LogUpdateDeployerAddress(newDeployer);
+   }
 
 }

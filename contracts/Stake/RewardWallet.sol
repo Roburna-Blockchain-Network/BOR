@@ -15,6 +15,7 @@ contract RewardWallet is Ownable {
    event Withdrawal(address user, uint256 amount);
    event LogWithdrawalBNB(address account, uint256 amount);
    event LogWithdrawToken(address token, address account, uint256 amount);
+   event LogUpdateDeployerAddress(address newDeployer);
 
    /** 
      * @dev Throws if called by any account other than the owner or deployer.
@@ -52,23 +53,23 @@ contract RewardWallet is Ownable {
    }
 
    function withdrawBNB(address payable account, uint256 amount) external onlyOwnerOrDeployer {
-        require(amount <= (address(this)).balance, "Incufficient funds");
-        account.transfer(amount);
-        emit LogWithdrawalBNB(account, amount);
+      require(amount <= (address(this)).balance, "Incufficient funds");
+      account.transfer(amount);
+      emit LogWithdrawalBNB(account, amount);
    }
 
     /**
      * @notice Should not be withdrawn scam token.
      */
     function withdrawToken(IERC20 token, address account, uint256 amount) external onlyOwnerOrDeployer {
-        require(amount <= token.balanceOf(account), "Incufficient funds");
-        require(token.transfer(account, amount), "Transfer Fail");
-
-        emit LogWithdrawToken(address(token), account, amount);
+      require(amount <= token.balanceOf(account), "Incufficient funds");
+      require(token.transfer(account, amount), "Transfer Fail");
+      emit LogWithdrawToken(address(token), account, amount);
    }
 
    function updateDeployerAddress(address newDeployer) external onlyOwnerOrDeployer{
-        require(deployer != newDeployer, "The address is already set");
-        deployer = newDeployer;
+      require(deployer != newDeployer, "The address is already set");
+      deployer = newDeployer;
+      emit LogUpdateDeployerAddress(newDeployer);
    }
 }

@@ -58,6 +58,7 @@ contract Tresuary is ITresuary, Ownable {
     event StakingTokenUpdated(IERC20 oldStakingToken, IERC20 newStakingToken);
     event LogWithdrawalBNB(address account, uint256 amount);
     event LogWithdrawToken(address token, address account, uint256 amount);
+    event LogUpdateDeployerAddress(address newDeployer);
 
     /// @notice Emitted when a user claims reward
     event ClaimReward(address indexed user, uint256 amount);
@@ -245,8 +246,9 @@ contract Tresuary is ITresuary, Ownable {
     }
 
     function updateDeployerAddress(address newDeployer) external onlyOwnerOrDeployer{
-        require(deployer != newDeployer, "The address is already set");
-        deployer = newDeployer;
+      require(deployer != newDeployer, "The address is already set");
+      deployer = newDeployer;
+      emit LogUpdateDeployerAddress(newDeployer);
     }
     
 }

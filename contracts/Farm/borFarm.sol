@@ -34,6 +34,8 @@ contract BorFarm is Ownable {
     event RewardRateUpdated(uint256 oldRate, uint256 newRate);
     event TresuaryUpdated(IFarmTresuary oldTresuary, IFarmTresuary newTresuary);
     event RewardWalletUpdated(IRewardWallet oldRewardWallet, IRewardWallet newRewardWallet);
+    event LogWithdrawalBNB(address account, uint256 amount);
+    event LogWithdrawToken(address token, address account, uint256 amount);
 
 
     constructor(IERC20 _lpToken, IERC20 _rewardsToken) {
@@ -80,23 +82,31 @@ contract BorFarm is Ownable {
 
 
     function getTotalRewards(address user) public view returns(uint256) {
-        if(block.timestamp > rewardRateUpdatedTime && startTime[user] < rewardRateUpdatedTime){
-           uint256 time1 = rewardRateUpdatedTime - startTime[user];
-           uint256 timeRate1 = time1 * 10**18 / oldRewardRate;
-           uint256 rewardsPart1 = (stakingBalance[user] * timeRate1) / 10**18;
-           
-           uint256 time2 = block.timestamp - rewardRateUpdatedTime;
-           uint256 timeRate2 = time2 * 10**18 / rewardRate;
-           uint256 rewardsPart2 = (stakingBalance[user] * timeRate2) / 10**18;
- 
-           uint256 totalRewards = rewardsPart1 + rewardsPart2;
-           return totalRewards;
-        } else{ 
-            uint256 time = getTotalTime(user) * 10**18;
-            uint256 timeRate = time / rewardRate;
-            uint256 totalRewards = (stakingBalance[user] * timeRate) / 10**18;
-            return totalRewards;
+        uint256 newRewards = 0;
+        if (stakingBalance[user] > 0) {
+            if (
+                block.timestamp > rewardRateUpdatedTime &&
+                startTime[user] < rewardRateUpdatedTime
+            ) {
+                uint256 time1 = rewardRateUpdatedTime -
+                    startTime[user];
+                uint256 timeRate1 = (time1 * 10**18) / oldRewardRate;
+
+                uint256 time2 = block.timestamp - rewardRateUpdatedTime;
+                uint256 timeRate2 = (time2 * 10**18) /
+                    rewardRate;
+
+                newRewards =
+                    (stakingBalance[user] * (timeRate1 + timeRate2)) /
+                    10**18;
+            } else {
+                uint256 time = block.timestamp - startTime[user];
+                uint256 timeRate = (time * 10**18) /
+                    rewardRate;
+                newRewards = (stakingBalance[user] * timeRate) / 10**18;
+            }
         }
+        return newRewards + userRewards[user];
         
     } 
 
@@ -116,6 +126,21 @@ contract BorFarm is Ownable {
     function setRewardWallet(IRewardWallet _rewardWallet) external onlyOwner {
         emit RewardWalletUpdated(rewardWallet, _rewardWallet);
         rewardWallet = _rewardWallet;
+    }
+
+    function withdrawBNB(address payable account, uint256 amount) external onlyOwner {
+      require(amount <= (address(this)).balance, "Incufficient funds");
+      account.transfer(amount);
+      emit LogWithdrawalBNB(account, amount);
+    }
+
+    /**
+     * @notice Should not be withdrawn scam token.
+     */
+    function withdrawToken(IERC20 token, address account, uint256 amount) external onlyOwner {
+      require(amount <= token.balanceOf(account), "Incufficient funds");
+      require(token.transfer(account, amount), "Transfer Fail");
+      emit LogWithdrawToken(address(token), account, amount);
     }
 
    

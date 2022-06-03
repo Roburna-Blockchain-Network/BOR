@@ -766,7 +766,12 @@ contract Iridium is IIridium, ERC20, Ownable {
     event vault2Updated(address indexed newVault2, address indexed oldVault2);
     event LiquidityWalletUpdated(address indexed newLiquidityWallet, address indexed oldLiquidityWallet);
     event SwapAndLiquify(uint256 tokensSwapped, uint256 ethReceived, uint256 tokensIntoLiqudity);
- 
+    event LogAddNewRouter(address _router);
+    event LogUpdateBuyFees(uint256 _liquidityFee, uint256 _vault1Fee, uint256 _vault2Fee);
+    event LogUpdateSwapTokensAtAmount(uint256 _swapTokensAtAmount);
+    event LogSwapAndSendToFeeVault1(uint256 tokens);
+    event LogSwapAndSendToFeeVault2(uint256 tokens);
+
 
     constructor(
         address _routerAddress,
@@ -806,6 +811,7 @@ contract Iridium is IIridium, ERC20, Ownable {
             defaultPair = IUniswapV2Factory(defaultDexRouter.factory()).createPair(address(this), defaultDexRouter.WETH());
             _setAutomatedMarketMakerPair(defaultPair, true);
         }
+        emit LogAddNewRouter(_router);
     }
 
     function excludeFromFees(address account, bool excluded) public onlyOwner {
@@ -872,6 +878,7 @@ contract Iridium is IIridium, ERC20, Ownable {
         buyVault1Fee = _vault1Fee;
         buyVault2Fee = _vault2Fee;
         buyTotalFees = buyLiquidityFee + buyVault1Fee + buyVault2Fee;
+        emit LogUpdateBuyFees(_liquidityFee, _vault1Fee, _vault2Fee);
     }
 
     function updateSellFees(
@@ -883,11 +890,13 @@ contract Iridium is IIridium, ERC20, Ownable {
         sellVault1Fee = _vault1Fee;
         sellVault2Fee = _vault2Fee;
         sellTotalFees = sellLiquidityFee + sellVault1Fee + sellVault2Fee;
+        emit LogUpdateBuyFees(_liquidityFee, _vault1Fee, _vault2Fee);
     }
 
     function updateSwapTokensAtAmount(uint256 _swapTokensAtAmount) external onlyOwner {
         require(_swapTokensAtAmount > 0, "Amount should be higher than 0");
         swapTokensAtAmount = _swapTokensAtAmount;
+        emit LogUpdateSwapTokensAtAmount(_swapTokensAtAmount);
     }
 
     function _transfer(
@@ -975,6 +984,7 @@ contract Iridium is IIridium, ERC20, Ownable {
         swapTokensForEth(tokens);
         uint256 newETHBalance = address(this).balance - initialETHBalance;
         payable(vault1).transfer(newETHBalance);
+        emit LogSwapAndSendToFeeVault1(tokens);
     }
 
     function swapAndSendToFeeVault2(uint256 tokens) private {
@@ -982,6 +992,7 @@ contract Iridium is IIridium, ERC20, Ownable {
         swapTokensForEth(tokens);
         uint256 newETHBalance = address(this).balance - initialETHBalance;
         payable(vault2).transfer(newETHBalance);
+        emit LogSwapAndSendToFeeVault2(tokens);
     }
 
     function swapAndLiquify(uint256 tokens) private {

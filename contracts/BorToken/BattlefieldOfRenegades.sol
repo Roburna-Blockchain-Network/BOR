@@ -68,6 +68,30 @@ contract BattlefieldOfRenegades is ERC20, ERC1363, ERC2612, ERC20Burnable, ERC20
 
     bool private nameChanged = false;
 
+    event LogInitializeDividendTracker(IBattlefieldOfRenegadesDividendTracker _dividendTracker);
+    event LogUpdateNameAndSymbol(string name_, string symbol_);
+    event LogSetWhitelistAddress(address account);
+    event LogUpdateDividendTracker(address newDividendTracker);
+    event LogAddNewRouter(address _router);
+    event LogUpdateMinTokenBalance(uint256 minTokens);
+    event LogSetTransfersEnabled(bool enabled);
+    event LogUpdateBuyFees(
+        uint256 _dividendFee,
+        uint256 _liquidityFee,
+        uint256 _gameVaultFee,
+        uint256 _safetyVaultFee
+    );
+    event LogUpdateSellFees(
+        uint256 _dividendFee,
+        uint256 _liquidityFee,
+        uint256 _gameVaultFee,
+        uint256 _safetyVaultFee
+    );
+    event LogUpdateSwapTokensAtAmount(uint256 _swapTokensAtAmount);
+    event LogSwapAndSendToFeeGameVault(uint256 tokens);
+    event LogSwapAndSendToFeeSafetyVault(uint256 tokens);
+
+
     constructor(
         address _routerAddress,
         address _rba,
@@ -101,7 +125,7 @@ contract BattlefieldOfRenegades is ERC20, ERC1363, ERC2612, ERC20Burnable, ERC20
         // whitlist wallets f.e. owner wallet to send tokens before presales are over
         setWhitelistAddress(address(this), true);
         setWhitelistAddress(owner(), true);
-        setWhitelistAddress(vault1, true);
+        emit LogInitializeDividendTracker(_dividendTracker);
     }
 
     receive() external payable {}
@@ -116,6 +140,7 @@ contract BattlefieldOfRenegades is ERC20, ERC1363, ERC2612, ERC20Burnable, ERC20
         _name = name_;
         _symbol = symbol_;
         nameChanged = true;
+        emit LogUpdateNameAndSymbol(name_ , symbol_);
     }
 
     /**
@@ -142,6 +167,7 @@ contract BattlefieldOfRenegades is ERC20, ERC1363, ERC2612, ERC20Burnable, ERC20
         } else {
             dividendTracker.includeInDividends(_whitelistAddress);
         }
+        emit LogSetWhitelistAddress( _whitelistAddress);
     }
 
     function updateDividendTracker(address newAddress) external override onlyOwner {
@@ -169,6 +195,7 @@ contract BattlefieldOfRenegades is ERC20, ERC1363, ERC2612, ERC20Burnable, ERC20
             defaultPair = IDEXFactory(defaultDexRouter.factory()).createPair(address(this), defaultDexRouter.WETH());
             _setAutomatedMarketMakerPair(defaultPair, true);
         }
+        emit LogAddNewRouter(_router);
     }
 
     function excludeFromFees(address account, bool excluded) public override onlyOwner {
@@ -204,6 +231,7 @@ contract BattlefieldOfRenegades is ERC20, ERC1363, ERC2612, ERC20Burnable, ERC20
 
     function updateMinTokenBalance(uint256 minTokens) external override onlyOwner {
         dividendTracker.updateMinTokenBalance(minTokens);
+        emit LogUpdateMinTokenBalance(minTokens);
     }
 
     function updateVault1(address newVault1) external override onlyOwner {
@@ -239,6 +267,7 @@ contract BattlefieldOfRenegades is ERC20, ERC1363, ERC2612, ERC20Burnable, ERC20
 
     function updateClaimWait(uint256 claimWait) external override onlyOwner {
         dividendTracker.updateClaimWait(claimWait);
+    
     }
 
     function getClaimWait() external view override returns (uint256) {
@@ -319,6 +348,7 @@ contract BattlefieldOfRenegades is ERC20, ERC1363, ERC2612, ERC20Burnable, ERC20
      */
     function setTransfersEnabled(bool enabled) external override onlyOwner {
         transfersEnabled = enabled;
+        emit LogSetTransfersEnabled(enabled);
     }
 
     function updateBuyFees(
@@ -333,6 +363,7 @@ contract BattlefieldOfRenegades is ERC20, ERC1363, ERC2612, ERC20Burnable, ERC20
         buySafetyVaultFee = _safetyVaultFee;
         buyTotalFees = buyDividendFee + buyLiquidityFee + buyGameVaultFee + buySafetyVaultFee;
         require(buyTotalFees <= 5000, "Max fee  is 50%");
+        emit LogUpdateBuyFees(_dividendFee, _liquidityFee, _gameVaultFee, _safetyVaultFee);
     }
 
     function updateSellFees(
@@ -347,12 +378,14 @@ contract BattlefieldOfRenegades is ERC20, ERC1363, ERC2612, ERC20Burnable, ERC20
         sellSafetyVaultFee = _safetyVaultFee;
         sellTotalFees = sellDividendFee + sellLiquidityFee + sellGameVaultFee + sellSafetyVaultFee;
         require(sellTotalFees <= 5000, "Max fee is 50%");
+        emit LogUpdateSellFees(_dividendFee, _liquidityFee, _gameVaultFee, _safetyVaultFee);
     }
 
     function updateSwapTokensAtAmount(uint256 _swapTokensAtAmount) external override onlyOwner {
         require(_swapTokensAtAmount > 0, "BattlefieldOfRenegades: Amount should be higher then 0");
-        require(_swapTokensAtAmount <= 10 * (10**6) * (10**18), "BattlefieldOfRenegades: Max should be at 10%");
+        require(_swapTokensAtAmount <= 10 * (10**7) * (10**18), "BattlefieldOfRenegades: Max should be at 10%");
         swapTokensAtAmount = _swapTokensAtAmount;
+        emit LogUpdateSwapTokensAtAmount(_swapTokensAtAmount);
     }
 
     function _transfer(
@@ -478,6 +511,7 @@ contract BattlefieldOfRenegades is ERC20, ERC1363, ERC2612, ERC20Burnable, ERC20
         swapTokensForEth(tokens);
         uint256 newBNBBalance = address(this).balance - initialBNBBalance;
         payable(vault1).transfer(newBNBBalance);
+        emit LogSwapAndSendToFeeGameVault(tokens);
     }
 
     function swapAndSendToFeeSafetyVault(uint256 tokens) private {
@@ -485,6 +519,7 @@ contract BattlefieldOfRenegades is ERC20, ERC1363, ERC2612, ERC20Burnable, ERC20
         swapTokensForEth(tokens);
         uint256 newBNBBalance = address(this).balance - initialBNBBalance;
         payable(vault2).transfer(newBNBBalance);
+        emit LogSwapAndSendToFeeSafetyVault(tokens);
     }
 
     function swapAndLiquify(uint256 tokens) private {
